@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV eSpot - Canais ao Vivo</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        :root {
+            --primary: #ff0000;
+            --secondary: #0066ff;
+            --dark: #0a0a0a;
+            --darker: #000000;
+            --light: #ffffff;
+            --gray: #808080;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: var(--dark);
+            color: var(--light);
+        }
+
+        .header {
+            background: linear-gradient(to bottom, var(--darker) 0%, rgba(0,0,0,0) 100%);
+            padding: 20px;
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .logo {
+            color: var(--primary);
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: none;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        .main {
+            padding-top: 80px;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: var(--darker);
+            padding: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            border-right: 1px solid var(--secondary);
+        }
+
+        .content {
+            margin-left: 250px;
+            flex: 1;
+            padding: 20px;
+        }
+
+        .channel-list {
+            list-style: none;
+        }
+
+        .channel-item {
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .channel-item:hover {
+            background: rgba(0, 102, 255, 0.1);
+            border-color: var(--secondary);
+        }
+
+        .channel-item.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        .video-container {
+            background: var(--darker);
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            margin-bottom: 20px;
+            position: relative;
+            border: 1px solid var(--secondary);
+            box-shadow: 0 0 20px rgba(0, 102, 255, 0.2);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .channel-info {
+            padding: 20px;
+            background: var(--darker);
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid var(--secondary);
+        }
+
+        .channel-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+
+        .channel-description {
+            color: var(--gray);
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--light);
+            font-size: 18px;
+            display: none;
+            text-shadow: 0 0 10px var(--secondary);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .content {
+                margin-left: 0;
+            }
+
+            .main {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="#" class="logo">TV eSpot</a>
+    </header>
+
+    <main class="main">
+        <aside class="sidebar">
+            <ul class="channel-list" id="channelList">
+                <!-- Channels will be added here by JavaScript -->
+            </ul>
+        </aside>
+
+        <div class="content">
+            <div class="video-container">
+                <video id="videoPlayer" controls autoplay></video>
+                <div id="loading" class="loading">Carregando stream...</div>
+            </div>
+            <div class="channel-info">
+                <h2 class="channel-title" id="channelTitle">Selecione um canal</h2>
+                <p class="channel-description" id="channelDescription">Escolha um canal da lista ao lado para começar a assistir.</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="channels.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const channelList = document.getElementById('channelList');
+            const channelTitle = document.getElementById('channelTitle');
+            const channelDescription = document.getElementById('channelDescription');
+            const loading = document.getElementById('loading');
+            let hls = null;
+
+            function loadStream(url) {
+                if (hls) {
+                    hls.destroy();
+                }
+
+                if (Hls.isSupported()) {
+                    hls = new Hls({
+                        debug: false,
+                        enableWorker: true,
+                        lowLatencyMode: true,
+                        backBufferLength: 90
+                    });
+                    
+                    hls.loadSource(url);
+                    hls.attachMedia(videoPlayer);
+                    
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        videoPlayer.play();
+                        loading.style.display = 'none';
+                    });
+
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        if (data.fatal) {
+                            switch(data.type) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    console.log('Erro de rede, tentando recuperar...');
+                                    hls.startLoad();
+                                    break;
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    console.log('Erro de mídia, tentando recuperar...');
+                                    hls.recoverMediaError();
+                                    break;
+                                default:
+                                    console.log('Erro fatal, não é possível recuperar');
+                                    hls.destroy();
+                                    break;
+                            }
+                        }
+                    });
+                } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Para Safari
+                    videoPlayer.src = url;
+                    videoPlayer.addEventListener('loadedmetadata', function() {
+                        videoPlayer.play();
+                        loading.style.display = 'none';
+                    });
+                }
+            }
+
+            // Create channel list
+            for (const [name, url] of Object.entries(channels)) {
+                const li = document.createElement('li');
+                li.className = 'channel-item';
+                li.textContent = name;
+                li.addEventListener('click', () => {
+                    // Update active channel
+                    document.querySelectorAll('.channel-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    li.classList.add('active');
+
+                    // Show loading
+                    loading.style.display = 'block';
+
+                    // Update video source
+                    loadStream(url);
+
+                    // Update channel info
+                    channelTitle.textContent = name;
+                    channelDescription.textContent = `Assistindo ${name} ao vivo`;
+                });
+                channelList.appendChild(li);
+            }
+
+            // Select first channel by default
+            if (channelList.firstChild) {
+                channelList.firstChild.click();
+            }
+        });
+    </script>
+</body>
+</html> 
