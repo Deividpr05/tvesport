@@ -1,7 +1,7 @@
 const channels = {
     "SPORTV": "https://maxfilmestorrent.org/sportv/tracks-v1a1/mono.ts.m3u8"
 }; 
-fetch('URL_DO_SEU_SCRIPT_GOOGLE_APPS_SCRIPT', {
+fetch('https://script.google.com/macros/s/AKfycbwvV86MbJo0gtiT4UvQB1ace7qZYqk-KlCoB1RdgbSLdHgPSZ2sF6F6-ifH4flY1lmHRQ/exec', {
   method: 'POST',
   body: JSON.stringify({message: 'Seu irmão entrou no site'}),
   headers: {'Content-Type': 'application/json'}
