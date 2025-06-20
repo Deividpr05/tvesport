@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TV eSpot - Canais ao Vivo</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <button onclick="registrarAcesso()">Testar Log</button>
+
+<script>
+  function registrarAcesso() {
+    fetch("https://script.google.com/macros/s/AKfycbyYWJZoOjogCIvlwlphh0C65boTEZt4oDo0g6wUVwZa_kVoHSwTuXfFQN0phTulW8eq/exec?message=Acesso%20clicado%20no%20celular")
+      .then(res => res.text())
+      .then(data => console.log("SUCESSO:", data))
+      .catch(err => console.error("ERRO:", err));
+  }
+</script>
+
     <style>
         :root {
             --primary: #ff0000;
